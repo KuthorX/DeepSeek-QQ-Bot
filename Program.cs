@@ -218,14 +218,6 @@ public class QQBot
             return;
         }
 
-        // 新增重试状态检查
-        if (IsGroupInRetry(groupUin.Value))
-        {
-            await SendTempMessage(bot, chain, "服务暂时不可用，自动恢复中请稍候...");
-            return;
-        }
-
-
         var isMention = false;
         foreach (var entity in chain)
         {
@@ -240,6 +232,13 @@ public class QQBot
         }
         if (!isMention)
         {
+            return;
+        }
+
+        // 新增重试状态检查
+        if (IsGroupInRetry(groupUin.Value))
+        {
+            await SendTempMessage(bot, chain, "服务暂时不可用，自动恢复中请稍候...");
             return;
         }
 
