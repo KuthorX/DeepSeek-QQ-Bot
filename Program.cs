@@ -10,6 +10,7 @@ using Lagrange.Core.Event.EventArg;
 using Lagrange.Core.Message;
 using Lagrange.Core.Message.Entity;
 using System.Collections.Concurrent;
+using QQBotCSharp.HorseGame;
 
 namespace QQBotCSharp;
 
@@ -49,6 +50,7 @@ public class QQBot
         KernelVersion = "10.0.19042.0"
     };
     private static readonly string _conversationsPath = "conversations.json";
+    private static readonly ConcurrentDictionary<uint, HorseGameHandler> groupHorseGameHandler = new(); 
 
     public static byte[] GenRandomBytes(int length)
     {
@@ -211,6 +213,7 @@ public class QQBot
     {
         var chain = e.Chain;
         var groupUin = chain.GroupUin;
+        var userUin = chain.FriendUin;
 
         // 群聊白名单检查
         if (!groupUin.HasValue || !_allowedGroupIds.Contains(groupUin.Value))
@@ -235,6 +238,28 @@ public class QQBot
             return;
         }
 
+        // 提取消息文本
+        var message = ExtractMessageText(chain);
+        if (string.IsNullOrWhiteSpace(message)) return;
+
+        foreach (var command in HorseGameHandler.HorseGameCommand)
+        {
+            if (message.StartsWith(command))
+            {
+                var handler = groupHorseGameHandler.GetOrAdd(groupUin!.Value, new HorseGameHandler(bot));
+                await handler.HandleCommandAsync(command, message.Split(" ").Skip(1).ToArray(), groupUin!.Value, userUin);
+                return;
+            }
+        }
+
+        var curHandler = groupHorseGameHandler.GetOrAdd(groupUin!.Value, new HorseGameHandler(bot));
+        if (curHandler.CheckIsRunning(groupUin!.Value))
+        {
+            await SendTempMessage(bot, chain, "赛马中，暂不支持 AI 回答。");
+            return;
+        }
+
+
         // 新增重试状态检查
         if (IsGroupInRetry(groupUin.Value))
         {
@@ -243,7 +268,6 @@ public class QQBot
         }
 
         // 获取上下文信息
-        var userUin = chain.FriendUin;
         var sessionKey = $"{groupUin}_{userUin}";
         Console.WriteLine($"sessionKey {sessionKey}");
 
@@ -253,10 +277,6 @@ public class QQBot
             await SendResponse(bot, chain, "请等待上一个请求处理完成");
             return;
         }
-
-        // 提取消息文本
-        var message = ExtractMessageText(chain);
-        if (string.IsNullOrWhiteSpace(message)) return;
 
         // 处理重置指令
         if (message.Trim().Equals("reset", StringComparison.OrdinalIgnoreCase))
