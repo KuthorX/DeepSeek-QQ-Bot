@@ -75,9 +75,9 @@ namespace QQBotCSharp.HorseGame
 
             // 触发环境变化
             var random = new Random();
-            if (random.Next(100) < 10) // 10% 概率触发环境变化
+            if (random.Next(100) < 30)
             {
-                int eventType = random.Next(2);
+                int eventType = random.Next(7); // 7 种场地技能
                 switch (eventType)
                 {
                     case 0:
@@ -85,6 +85,21 @@ namespace QQBotCSharp.HorseGame
                         break;
                     case 1:
                         TriggerSwamp();
+                        break;
+                    case 2:
+                        TriggerHurricane();
+                        break;
+                    case 3:
+                        TriggerRainbowBridge();
+                        break;
+                    case 4:
+                        TriggerMeteorShower();
+                        break;
+                    case 5:
+                        TriggerVolcano();
+                        break;
+                    case 6:
+                        TriggerAurora();
                         break;
                 }
             }
@@ -138,6 +153,68 @@ namespace QQBotCSharp.HorseGame
             var target = _horses[new Random().Next(_horses.Count)];
             target.SwampRounds = 3;
             _skillMessages.Add($"🌊 {target.Emoji} 的赛道变成了沼泽，速度减1，持续3回合！");
+        }
+
+        private void TriggerHurricane()
+        {
+            foreach (var horse in _horses.Where(h => !h.IsDead))
+            {
+                horse.Speed = Math.Max(1, horse.Speed - 1);
+            }
+            _skillMessages.Add("🌪️ 狂风来袭，所有马匹速度-1！");
+        }
+
+        private void TriggerRainbowBridge()
+        {
+            foreach (var horse in _horses.Where(h => !h.IsDead))
+            {
+                horse.Speed += 1;
+            }
+            _skillMessages.Add("🌈 彩虹桥出现，所有马匹速度+1！");
+        }
+
+        private void TriggerMeteorShower()
+        {
+            var random = new Random();
+            var affectedHorses = _horses
+                .Where(h => !h.IsDead)
+                .OrderBy(x => random.Next())
+                .Take(3)
+                .ToList();
+
+            int steps = random.Next(2, 5);
+            foreach (var horse in affectedHorses)
+            {
+                horse.Position = Math.Max(0, horse.Position - steps);
+            }
+            _skillMessages.Add($"🌠 流星雨降临，{string.Join(", ", affectedHorses.Select(h => h.Emoji))} 后退了{steps}步！");
+        }
+
+        private void TriggerVolcano()
+        {
+            var target = _horses
+                .Where(h => !h.IsDead)
+                .OrderBy(x => new Random().Next())
+                .FirstOrDefault();
+
+            if (target != null)
+            {
+                target.Position = 0;
+                target.Speed = Math.Max(1, target.Speed - 1);
+                _skillMessages.Add($"🌋 火山喷发，{target.Emoji} 被击退到起点，速度-1！");
+            }
+        }
+
+        private void TriggerAurora()
+        {
+            var random = new Random();
+            var messages = new List<string>();
+            int delta = random.Next(-2, 3); // -2, -1, 0, 1, 2
+            foreach (var horse in _horses.Where(h => !h.IsDead))
+            {
+                horse.Speed = Math.Max(1, horse.Speed + delta);
+            }
+            _skillMessages.Add($"🌌 极光出现，所有选手速度变化：{(delta > 0 ? "+" : "")}{delta}");
         }
 
         private async Task AnnounceResultsAsync()

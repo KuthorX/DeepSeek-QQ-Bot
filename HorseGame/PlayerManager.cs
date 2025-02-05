@@ -21,6 +21,24 @@ namespace QQBotCSharp.HorseGame
             await SendMessageAsync(groupUin, $"你的当前积分为：{points}");
         }
 
+        public async Task GetGroupMemberRankingAsync(uint groupUin)
+        {
+            var uinPoints = await _database.GetGroupMemberRankingAsync(groupUin);
+            if (uinPoints.Count == 0)
+            {
+                await SendMessageAsync(groupUin, "本群没有群友的赛马积分记录。");
+                return;
+            }
+            var chain = MessageBuilder.Group(groupUin).Text("本群赛马积分排名\n");
+            var rank = 1;
+            foreach (var (UserUin, Points) in uinPoints)
+            {
+                chain.Text($"{rank}. ").Mention(UserUin).Text($" {Points}\n");
+                rank += 1;
+            }
+            await SendMessageAsync(chain);
+        }
+
         public async Task SignInAsync(uint groupUin, uint userUin)
         {
             if (await _database.IsSignedInTodayAsync(groupUin, userUin))
@@ -48,6 +66,11 @@ namespace QQBotCSharp.HorseGame
         private async Task SendMessageAsync(uint groupUin, string message)
         {
             var chain = MessageBuilder.Group(groupUin).Text(message);
+            await _context.SendMessage(chain.Build());
+        }
+
+        private async Task SendMessageAsync(MessageBuilder chain)
+        {
             await _context.SendMessage(chain.Build());
         }
     }

@@ -190,5 +190,33 @@ namespace QQBotCSharp.HorseGame
                 }
             }
         }
+
+        /// <summary>
+        /// 获取本群群友积分排名
+        /// </summary>
+        public async Task<List<(uint UserUin, int Points)>> GetGroupMemberRankingAsync(uint groupUin)
+        {
+            using var connection = new SQLiteConnection(_connectionString);
+            await connection.OpenAsync();
+            var query = @"
+                    SELECT user_uin, points
+                    FROM players
+                    WHERE group_uin = @groupUin
+                    ORDER BY points DESC;";
+            using var command = new SQLiteCommand(query, connection);
+            command.Parameters.AddWithValue("@groupUin", groupUin);
+
+            var reader = await command.ExecuteReaderAsync();
+            var ranking = new List<(uint UserUin, int Points)>();
+
+            while (await reader.ReadAsync())
+            {
+                var userUin = reader.GetInt32(0);
+                var points = reader.GetInt32(1);
+                ranking.Add(((uint UserUin, int Points))(userUin, points));
+            }
+
+            return ranking;
+        }
     }
 }
