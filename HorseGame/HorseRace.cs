@@ -40,8 +40,8 @@ namespace QQBotCSharp.HorseGame
             await SendRaceStatusAsync();
 
             // 等待30秒下注
-            await SendMessageAsync("30秒内可以下注。");
-            await Task.Delay(30000);
+            await SendMessageAsync("60秒内可以下注。");
+            await Task.Delay(60000);
 
             if (_bets.Count == 0)
             {
@@ -139,12 +139,20 @@ namespace QQBotCSharp.HorseGame
 
         private void TriggerLightning()
         {
-            var aliveHorses = _horses.Where(h => !h.IsDead).ToList();
-            if (aliveHorses.Any())
+            var targets = _horses
+                .Where(h => !h.IsDead)
+                .OrderBy(x => new Random().Next())
+                .Take(new Random().Next(1, 5))
+                .ToList();
+            var emojis = "";
+            foreach (var target in targets)
             {
-                var target = aliveHorses[new Random().Next(aliveHorses.Count)];
                 target.IsDead = true;
-                _skillMessages.Add($"⚡ 闪电击中了 {target.Emoji}，它倒下了！");
+                emojis += $"{target.Emoji}";
+            }
+            if (emojis != "")
+            {
+                _skillMessages.Add($"⚡ 闪电击中了 {emojis}，倒下了！");
             }
         }
 
@@ -192,16 +200,21 @@ namespace QQBotCSharp.HorseGame
 
         private void TriggerVolcano()
         {
-            var target = _horses
+            var targets = _horses
                 .Where(h => !h.IsDead)
                 .OrderBy(x => new Random().Next())
-                .FirstOrDefault();
-
-            if (target != null)
+                .Take(new Random().Next(1, 11))
+                .ToList();
+            var emojis = "";
+            foreach (var target in targets)
             {
                 target.Position = 0;
                 target.Speed = Math.Max(1, target.Speed - 1);
-                _skillMessages.Add($"🌋 火山喷发，{target.Emoji} 被击退到起点，速度-1！");
+                emojis += $"{target.Emoji}";
+            }
+            if (emojis != "")
+            {
+                _skillMessages.Add($"🌋 火山喷发，{emojis} 被击退到起点，速度-1！");
             }
         }
 

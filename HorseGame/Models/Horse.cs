@@ -59,7 +59,7 @@ namespace QQBotCSharp.HorseGame.Models
                     case 3:
                         return ("闪光弹[随机后退]", ActivateFlashBomb(horses));
                     case 4:
-                        return ("疾风冲刺[随机前进3-6步]", ActivateDash());
+                        return ("疾风冲刺[随机前进2-4步]", ActivateDash());
                     case 5:
                         return ("护盾[免疫马技能和沼泽]", ActivateShield());
                     case 6:
@@ -114,7 +114,7 @@ namespace QQBotCSharp.HorseGame.Models
 
         private List<Horse>? ActivateDash()
         {
-            int steps = new Random().Next(3, 6);
+            int steps = new Random().Next(2, 5);
             Position = Math.Min(20, Position + steps);
             return null; // 只影响自己
         }

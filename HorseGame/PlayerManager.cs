@@ -51,6 +51,18 @@ namespace QQBotCSharp.HorseGame
             await SendMessageAsync(groupUin, "签到成功！获得1000积分。");
         }
 
+        public async Task BegAsync(uint groupUin, uint userUin)
+        {
+            var points = await _database.GetPlayerPointsAsync(groupUin, userUin);
+            if (points > 0) {
+                await SendMessageAsync(groupUin, "你还有积分，继续梭哈吧！");
+                return;
+            }
+            var point = new Random().Next(50, 101);
+            await _database.AddPointsAsync(groupUin, userUin, point);
+            await SendMessageAsync(groupUin, $"乞讨成功！获得 {point} 积分。");
+        }
+
         public static async Task<bool> DeductPointsAsync(uint groupUin, uint userUin, int amount)
         {
             var database = new Database();

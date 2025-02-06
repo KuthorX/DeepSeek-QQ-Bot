@@ -6,7 +6,7 @@ namespace QQBotCSharp.HorseGame
 {
     public class HorseGameHandler
     {
-        public static HashSet<string> HorseGameCommand = ["开始赛马", "赛马下注", "查询积分", "赛马签到", "查询排名"];
+        public static HashSet<string> HorseGameCommand = ["赛马游戏", "开始赛马", "赛马下注", "查询积分", "赛马签到", "查询排名", "赛马乞讨"];
         private readonly BotContext _context;
         private readonly GameManager _gameManager;
         private readonly PlayerManager _playerManager;
@@ -27,6 +27,9 @@ namespace QQBotCSharp.HorseGame
         {
             switch (command)
             {
+                case "赛马游戏":
+                    await ExplainRace(groupUin);
+                    break;
                 case "开始赛马":
                     await _gameManager.StartRaceAsync(groupUin);
                     break;
@@ -46,6 +49,9 @@ namespace QQBotCSharp.HorseGame
                 case "赛马签到":
                     await _playerManager.SignInAsync(groupUin, userUin);
                     break;
+                case "赛马乞讨":
+                    await _playerManager.BegAsync(groupUin, userUin);
+                    break;
                 case "查询排名":
                     await _playerManager.GetGroupMemberRankingAsync(groupUin);
                     break;
@@ -53,6 +59,12 @@ namespace QQBotCSharp.HorseGame
                     await SendMessageAsync(groupUin, "未知指令");
                     break;
             }
+        }
+        
+        public async Task ExplainRace(uint groupUin)
+        {
+            var commandsMsg = string.Join(", ", HorseGameCommand);
+            await SendMessageAsync(groupUin, $"赛马游戏\n支持指令：{commandsMsg}\n最近更新：\n闪电、火山范围加强：范围增大；疾风冲刺3-5改为2-4");
         }
 
         private async Task SendMessageAsync(uint groupUin, string message)
