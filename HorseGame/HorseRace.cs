@@ -37,7 +37,7 @@ namespace QQBotCSharp.HorseGame
         {
             // 展示初始赛道
             await SendMessageAsync("赛马比赛开始！以下是参赛选手和赛道：");
-            await SendRaceStatusAsync();
+            await SendRaceStatusAsync(true);
 
             // 等待30秒下注
             await SendMessageAsync("60秒内可以下注。");
@@ -322,7 +322,8 @@ namespace QQBotCSharp.HorseGame
                     {
                         int reward = bet.Amount * multiplier;
                         await PlayerManager.AddPointsAsync(_groupUin, bet.UserUin, reward);
-                        chain.Mention(bet.UserUin).Text($"下注了 {h.Emoji}，获得第 {rank} 名，奖励 {reward} 积分！\n");
+                        var point = await new Database().GetPlayerPointsAsync(_groupUin, bet.UserUin);
+                        chain.Mention(bet.UserUin).Text($"下注了 {h.Emoji}，获得第 {rank} 名，奖励 {reward} 积分！当前积分 {point}。\n");
                         hasWinner = true;
                     }
                 }
@@ -337,14 +338,20 @@ namespace QQBotCSharp.HorseGame
             }
         }
 
-        private async Task SendRaceStatusAsync()
+        private async Task SendRaceStatusAsync(bool sendTrackNumber = false)
         {
             var currentRoundMessage = $"当前回合：{currentRound}";
             var skillMessages = string.Join("\n", _skillMessages);
+            var trackNumber = 1;
             var status = string.Join("\n", _horses.Select(h =>
             {
                 var emoji = h.IsDead ? "💀" : h.Emoji;
                 var track = new string('_', 20 - h.Position) + emoji + new string('_', h.Position);
+                if (sendTrackNumber)
+                {
+                    track += $" {trackNumber}";
+                    trackNumber += 1;
+                }
                 return $"{track}";
             }));
             await SendMessageAsync($"{currentRoundMessage}\n{skillMessages}\n{status}");
