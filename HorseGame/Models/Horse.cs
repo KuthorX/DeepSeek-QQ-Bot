@@ -37,12 +37,13 @@ namespace QQBotCSharp.HorseGame.Models
             HasShield = false;
         }
 
-        public (string? skillName, List<Horse>? affectedHorses) TryActivateSkill(List<Horse> horses)
+        public (string? skillName, List<Horse>? affectedHorses) TryActivateSkill(List<Horse> horses, uint currentRound)
         {
             if (IsDead) return (null, null);
 
             var random = new Random();
-            if (random.Next(100) < 20) // 20% 概率触发技能
+            var realRate = 20 + currentRound * 2;
+            if (random.Next(100) < realRate)
             {
                 // 扩展技能范围到 7 种（原4种 + 新增3种）
                 int skill = random.Next(7);

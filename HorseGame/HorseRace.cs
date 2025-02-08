@@ -75,7 +75,8 @@ namespace QQBotCSharp.HorseGame
 
             // 触发环境变化
             var random = new Random();
-            if (random.Next(100) < 30)
+            var realRate = 30 + currentRound * 2;
+            if (random.Next(100) < realRate)
             {
                 int eventType = random.Next(7); // 7 种场地技能
                 switch (eventType)
@@ -109,7 +110,7 @@ namespace QQBotCSharp.HorseGame
             {
                 if (!horse.IsDead)
                 {
-                    var (skillName, affectedHorses) = horse.TryActivateSkill(_horses);
+                    var (skillName, affectedHorses) = horse.TryActivateSkill(_horses, currentRound);
                     if (skillName != null)
                     {
                         TriggerSkill(horse, skillName, affectedHorses);
