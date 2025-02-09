@@ -38,6 +38,13 @@ namespace QQBotCSharp.HorseGame
             // 展示初始赛道
             await SendMessageAsync("赛马比赛开始！以下是参赛选手和赛道：");
             await SendRaceStatusAsync(true);
+            if (new Random().Next(100) < 10)
+            {
+                // 出现特殊马
+                var targetId = new Random().Next(0, 10);
+                _horses[targetId].SepcialHorse = true;
+                await SendMessageAsync($"本局出现特殊马 ${targetId + 1} 号！技能发动基础概率提升至 80%！");
+            }
 
             // 等待30秒下注
             await SendMessageAsync("60秒内可以下注。");
@@ -110,7 +117,8 @@ namespace QQBotCSharp.HorseGame
             {
                 if (!horse.IsDead)
                 {
-                    var (skillName, affectedHorses) = horse.TryActivateSkill(_horses, currentRound);
+                    var hasBet = _bets.Values.Any(b => b.HorseId == horse.Id);
+                    var (skillName, affectedHorses) = horse.TryActivateSkill(_horses, currentRound, hasBet);
                     if (skillName != null)
                     {
                         TriggerSkill(horse, skillName, affectedHorses);

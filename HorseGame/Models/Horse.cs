@@ -11,6 +11,7 @@ namespace QQBotCSharp.HorseGame.Models
         public int SwampRounds { get; set; } // 沼泽剩余回合
         public bool HasShield { get; set; } // 护盾状态
         public int OriginalSpeed { get; set; } = 2; // 初始速度（用于回春术）
+        public bool SepcialHorse { get; set; } = false; // 是否特殊马
 
         public void Move()
         {
@@ -37,12 +38,17 @@ namespace QQBotCSharp.HorseGame.Models
             HasShield = false;
         }
 
-        public (string? skillName, List<Horse>? affectedHorses) TryActivateSkill(List<Horse> horses, uint currentRound)
+        public (string? skillName, List<Horse>? affectedHorses) TryActivateSkill(List<Horse> horses, uint currentRound, bool hasBet)
         {
             if (IsDead) return (null, null);
 
             var random = new Random();
-            var realRate = 20 + currentRound * 2;
+            var baseRate = SepcialHorse ? 80 : 20;
+            var realRate = baseRate + currentRound * 2;
+            if (hasBet)
+            {
+                realRate += 20;
+            }
             if (random.Next(100) < realRate)
             {
                 // 扩展技能范围到 7 种（原4种 + 新增3种）

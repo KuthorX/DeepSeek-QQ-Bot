@@ -29,11 +29,17 @@ namespace QQBotCSharp.HorseGame
                 await SendMessageAsync(groupUin, "本群没有群友的赛马积分记录。");
                 return;
             }
+            var groupMembers = await _context.FetchMembers(groupUin, true);
+            var uinNames = new Dictionary<uint, string>();
+            foreach (var m in groupMembers)
+            {
+                uinNames[m.Uin] = m.MemberCard ?? m.MemberName;
+            }
             var chain = MessageBuilder.Group(groupUin).Text("本群赛马积分排名\n");
             var rank = 1;
             foreach (var (UserUin, Points) in uinPoints)
             {
-                chain.Text($"{rank}. ").Mention(UserUin).Text($" {Points}\n");
+                chain.Text($"{rank}. ").Text($"{uinNames[UserUin]}").Text($" {Points}\n");
                 rank += 1;
             }
             await SendMessageAsync(chain);
