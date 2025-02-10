@@ -15,6 +15,8 @@ namespace QQBotCSharp.HorseGame
         private readonly Dictionary<uint, Bet> _bets = new(); // 玩家 -> 下注
         private List<string> _skillMessages = new();
         private uint currentRound = 0;
+        private string currentEnv = "平地";
+        private readonly List<string> _envs = ["平地", "草原", "丛林", "山地", "泥地", "沙地", "河流"];
 
         public HorseRace(BotContext context, uint groupUin)
         {
@@ -43,6 +45,7 @@ namespace QQBotCSharp.HorseGame
 
         public async Task StartAsync()
         {
+            currentEnv = _envs[new Random().Next(_envs.Count)];
             // 展示初始赛道
             await SendMessageAsync("赛马比赛开始！以下是参赛选手和赛道：");
             await SendRaceStatusAsync(true);
@@ -50,6 +53,7 @@ namespace QQBotCSharp.HorseGame
             {
                 await AwakeSpecialHorse();
             }
+            await SendMessageAsync($"当前环境：{currentEnv}");
 
             // 等待30秒下注
             await SendMessageAsync("60秒内可以下注。");
@@ -136,7 +140,7 @@ namespace QQBotCSharp.HorseGame
 
             foreach (var horse in _horses)
             {
-                horse.Move();
+                horse.Move(currentEnv);
             }
 
             await SendRaceStatusAsync();

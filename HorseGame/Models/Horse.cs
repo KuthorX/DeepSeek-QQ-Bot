@@ -13,7 +13,7 @@ namespace QQBotCSharp.HorseGame.Models
         public int OriginalSpeed { get; set; } = 2; // 初始速度（用于回春术）
         public bool SepcialHorse { get; set; } = false; // 是否特殊马
 
-        public void Move()
+        public void Move(string currentEnv)
         {
             if (IsDead) return;
 
@@ -23,12 +23,19 @@ namespace QQBotCSharp.HorseGame.Models
                 return;
             }
 
-            // 如果处于沼泽中，速度减1（最低为1）
-            // 如果处于沼泽中且无护盾，速度减1
-            int effectiveSpeed = SwampRounds > 0 && !HasShield
-                ? Math.Max(Speed - 1, 1)
-                : Speed;
-            Position += effectiveSpeed;
+            var envSpeed = 0;
+            if (SwampRounds > 0 && !HasShield)
+            {
+                // 如果处于沼泽中且无护盾，速度减1
+                envSpeed = Math.Max(Speed - 1, 1);
+            }
+            else
+            {
+                envSpeed = Speed + AnimalSpeedData.AnimalSpeedDict[Emoji][currentEnv];
+                envSpeed = Math.Max(envSpeed, 1);
+            }
+
+            Position += envSpeed;
             Position = Math.Min(20, Position);
 
             // 更新沼泽剩余回合
