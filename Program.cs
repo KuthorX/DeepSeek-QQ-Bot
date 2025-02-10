@@ -124,6 +124,8 @@ public class QQBot
             _allowedGroupIds = new HashSet<uint>(config.AllowedGroupIds);
 
             Console.WriteLine($"已加载配置：BotUin={_botUin}, 允许群组={string.Join(",", _allowedGroupIds)}");
+
+            AnimalSpeedData.LoadDataFromJson();
         }
         catch (Exception ex)
         {

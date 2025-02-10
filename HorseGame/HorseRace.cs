@@ -33,6 +33,14 @@ namespace QQBotCSharp.HorseGame
             currentRound = 0;
         }
 
+        public async Task AwakeSpecialHorse()
+        {
+            // 出现特殊马
+            var targetId = new Random().Next(0, 10);
+            _horses[targetId].SepcialHorse = true;
+            await SendMessageAsync($"本局出现特殊马 {targetId + 1} 号！技能发动基础概率提升至 80%！");
+        }
+
         public async Task StartAsync()
         {
             // 展示初始赛道
@@ -40,10 +48,7 @@ namespace QQBotCSharp.HorseGame
             await SendRaceStatusAsync(true);
             if (new Random().Next(100) < 10)
             {
-                // 出现特殊马
-                var targetId = new Random().Next(0, 10);
-                _horses[targetId].SepcialHorse = true;
-                await SendMessageAsync($"本局出现特殊马 ${targetId + 1} 号！技能发动基础概率提升至 80%！");
+                await AwakeSpecialHorse();
             }
 
             // 等待30秒下注
@@ -85,7 +90,7 @@ namespace QQBotCSharp.HorseGame
             var realRate = 30 + currentRound * 2;
             if (random.Next(100) < realRate)
             {
-                int eventType = random.Next(7); // 7 种场地技能
+                int eventType = random.Next(8); // 7 种场地技能
                 switch (eventType)
                 {
                     case 0:
@@ -108,6 +113,9 @@ namespace QQBotCSharp.HorseGame
                         break;
                     case 6:
                         TriggerAurora();
+                        break;
+                    case 7:
+                        TriggerMirror();
                         break;
                 }
             }
@@ -237,6 +245,15 @@ namespace QQBotCSharp.HorseGame
                 horse.Speed = Math.Max(1, horse.Speed + delta);
             }
             _skillMessages.Add($"🌌 极光出现，所有选手速度变化：{(delta > 0 ? "+" : "")}{delta}");
+        }
+
+        private void TriggerMirror()
+        {
+            foreach (var horse in _horses.Where(h => !h.IsDead))
+            {
+                horse.Position = 20 - horse.Position;
+            }
+            _skillMessages.Add($"🪞 魔镜出现，所有选手位置两极反转！");
         }
 
         private async Task AnnounceResultsAsync()
@@ -372,7 +389,6 @@ namespace QQBotCSharp.HorseGame
             {
                 await SendMessageAsync("比赛已经开始，无法继续下注！");
                 return;
-
             }
             if (horseId < 1 || horseId > 10)
             {

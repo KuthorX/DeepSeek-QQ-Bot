@@ -33,6 +33,18 @@ namespace QQBotCSharp.HorseGame
             _activeRaces.Remove(groupUin);
         }
 
+        public async Task AwakeSpecialHorse(uint groupUin)
+        {
+            if (_activeRaces.TryGetValue(groupUin, out var race))
+            {
+                await race.AwakeSpecialHorse();
+            }
+            else
+            {
+                await SendMessageAsync(groupUin, "当前没有正在进行的赛马比赛！");
+            }
+        }
+
         public async Task PlaceBetAsync(uint groupUin, uint userUin, int horseId, int betAmount)
         {
             if (_activeRaces.TryGetValue(groupUin, out var race))

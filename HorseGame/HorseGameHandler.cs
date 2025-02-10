@@ -6,7 +6,7 @@ namespace QQBotCSharp.HorseGame
 {
     public class HorseGameHandler
     {
-        public static HashSet<string> HorseGameCommand = ["赛马游戏", "开始赛马", "赛马下注", "查询积分", "赛马签到", "查询排名", "赛马乞讨"];
+        public static HashSet<string> HorseGameCommand = ["赛马游戏", "开始赛马", "赛马下注", "查询积分", "赛马签到", "查询排名", "赛马乞讨", "觉醒超级马"];
         private readonly BotContext _context;
         private readonly GameManager _gameManager;
         private readonly PlayerManager _playerManager;
@@ -54,6 +54,9 @@ namespace QQBotCSharp.HorseGame
                     break;
                 case "查询排名":
                     await _playerManager.GetGroupMemberRankingAsync(groupUin);
+                    break;
+                case "觉醒超级马":
+                    await _gameManager.AwakeSpecialHorse(groupUin);
                     break;
                 default:
                     await SendMessageAsync(groupUin, "未知指令");
