@@ -87,7 +87,7 @@ public class CricketBattleGameManager
 
     private async Task QueryPoints(uint uin)
     {
-        int points = _databaseManager.GetUserPoints(uin);
+        int points = _databaseManager.GetUserPoints(_groupUin, uin);
         await SendMessageAsync($"你的蛐蛐积分：{points}");
     }
 
@@ -112,11 +112,11 @@ public class CricketBattleGameManager
 
     private async Task CheckIn(uint uin) // 修改参数类型为 uint
     {
-        if (_databaseManager.CanCheckInToday(uin))
+        if (_databaseManager.CanCheckInToday(_groupUin, uin))
         {
-            _databaseManager.UpdateUserPoints(uin, 1000);
-            _databaseManager.UpdateCheckInDate(uin);
-            await SendMessageAsync($"签到成功！奖励 1000 积分，当前积分：{_databaseManager.GetUserPoints(uin)}");
+            _databaseManager.UpdateUserPoints(_groupUin, uin, 1000);
+            _databaseManager.UpdateCheckInDate(_groupUin, uin);
+            await SendMessageAsync($"签到成功！奖励 1000 积分，当前积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
         }
         else
         {
@@ -126,12 +126,12 @@ public class CricketBattleGameManager
 
     private async Task Beg(uint uin) // 修改参数类型为 uint
     {
-        int currentPoints = _databaseManager.GetUserPoints(uin);
+        int currentPoints = _databaseManager.GetUserPoints(_groupUin, uin);
         if (currentPoints == 0)
         {
             int reward = _gameState.Random.Next(100, 201);
-            _databaseManager.UpdateUserPoints(uin, reward);
-            await SendMessageAsync($"乞讨成功！获得 {reward} 积分，当前积分：{_databaseManager.GetUserPoints(uin)}");
+            _databaseManager.UpdateUserPoints(_groupUin, uin, reward);
+            await SendMessageAsync($"乞讨成功！获得 {reward} 积分，当前积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
         }
         else
         {
@@ -215,14 +215,14 @@ public class CricketBattleGameManager
             return;
         }
 
-        int currentPoints = _databaseManager.GetUserPoints(uin);
+        int currentPoints = _databaseManager.GetUserPoints(_groupUin, uin);
         if (currentPoints < betAmount)
         {
             await SendMessageAsync("积分不足，无法下注。");
             return;
         }
 
-        _databaseManager.UpdateUserPoints(uin, -betAmount); // 扣除下注积分
+        _databaseManager.UpdateUserPoints(_groupUin, uin, -betAmount); // 扣除下注积分
 
         if (cricketNumber == 1)
         {
@@ -234,7 +234,7 @@ public class CricketBattleGameManager
             {
                 _gameState.Cricket1Bets.Add(uin, betAmount); // 玩家首次下注
             }
-            await SendMessageAsync($"{uin} 下注 蛐蛐1，积分 {betAmount}，当前积分：{_databaseManager.GetUserPoints(uin)}");
+            await SendMessageAsync($"{uin} 下注 蛐蛐1，积分 {betAmount}，当前积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
         }
         else if (cricketNumber == 2)
         {
@@ -246,11 +246,11 @@ public class CricketBattleGameManager
             {
                 _gameState.Cricket2Bets.Add(uin, betAmount); // 玩家首次下注
             }
-            await SendMessageAsync($"{uin} 下注 蛐蛐2，积分 {betAmount}，当前积分：{_databaseManager.GetUserPoints(uin)}");
+            await SendMessageAsync($"{uin} 下注 蛐蛐2，积分 {betAmount}，当前积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
         }
         else
         {
-            _databaseManager.UpdateUserPoints(uin, betAmount); // 下注无效，返还积分
+            _databaseManager.UpdateUserPoints(_groupUin, uin, betAmount); // 下注无效，返还积分
             await SendMessageAsync("无效的蛐蛐编号，请下注 1 或 2。积分已返还。");
         }
     }
@@ -353,8 +353,8 @@ public class CricketBattleGameManager
                 uint playerUin = betEntry.Key; // Key 类型为 uint
                 int betAmount = betEntry.Value;
                 int rewardAmount = betAmount * rewardMultiplier;
-                _databaseManager.UpdateUserPoints(playerUin, rewardAmount);
-                int points = _databaseManager.GetUserPoints(playerUin);
+                _databaseManager.UpdateUserPoints(_groupUin, playerUin, rewardAmount);
+                int points = _databaseManager.GetUserPoints(_groupUin, playerUin);
                 SendMessageAsync($"恭喜玩家 {playerUin} 下注 蛐蛐{winningCricketNumber} 获胜，获得奖励积分 {rewardAmount}！当前积分 {points}").Wait();
             }
         }
