@@ -113,7 +113,7 @@ public class CricketBattleGameManager
         }
         await SendMessageAsync(rankingMessage.TrimEnd('\n')); // 移除末尾换行符
     }
-     private async Task ShowSkills() // 新增 ShowSkills 方法
+    private async Task ShowSkills() // 新增 ShowSkills 方法
     {
         string skillsMessage = "--- 蛐蛐技能列表 ---\n";
         foreach (var skillPair in _skillLibrary)
@@ -193,11 +193,13 @@ public class CricketBattleGameManager
         int health = 500 - attack * 5;
         Cricket cricket = new Cricket(name, attack, health);
 
-        // 随机分配两个技能
-        List<int> skillKeys = _skillLibrary.Keys.ToList();
+        // 随机分配两个技能 (排除 "嘿哈" 技能)
+        // 获取技能库中所有技能的 ID，并排除 ID 为 1 的技能
+        List<int> skillKeys = _skillLibrary.Keys.Where(key => key != 1).ToList();
         HashSet<int> selectedSkillIds = new HashSet<int>();
         while (selectedSkillIds.Count < 2)
         {
+            // 从排除 "嘿哈" 的技能 ID 列表中随机选择
             selectedSkillIds.Add(skillKeys[_gameState.Random.Next(skillKeys.Count)]);
         }
         foreach (int skillId in selectedSkillIds)
