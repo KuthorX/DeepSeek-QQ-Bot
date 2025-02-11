@@ -27,9 +27,9 @@ public class DatabaseManager
                 connection.Open();
                 string sql = @"
                         CREATE TABLE IF NOT EXISTS PlayerPoints (
-                            ID  PRIMARY KEY,
-                            Uin TEXT,  -- 数据库中仍然使用 TEXT 类型
-                            GroupUin TEXT,       -- 数据库中仍然使用 TEXT 类型
+                            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                            GroupUin INTEGER NOT NULL,
+                            Uin INTEGER NOT NULL,
                             Points INTEGER NOT NULL DEFAULT 0,
                             CheckInDate TEXT
                         );";
@@ -44,15 +44,16 @@ public class DatabaseManager
         return new SQLiteConnection(ConnectionString);
     }
 
-    public int GetUserPoints(uint groupUin, uint uin) // 修改参数类型为 uint
+    public int GetUserPoints(uint groupUin, uint uin)
     {
         using (var connection = GetConnection())
         {
             connection.Open();
-            string sql = "SELECT Points FROM PlayerPoints WHERE Uin = @Uin AND GroupUin=@GroupUin";
+            string sql = @"INSERT OR IGNORE INTO PlayerPoints (GroupUin, Uin, Points, CheckInDate) VALUES (@GroupUin, @Uin, 0, 0);
+            SELECT Points FROM PlayerPoints WHERE Uin = @Uin AND GroupUin=@GroupUin";
             SQLiteCommand command = new SQLiteCommand(sql, connection);
-            command.Parameters.AddWithValue("@Uin", uin.ToString()); // uint 转换为 string 存入数据库
-            command.Parameters.AddWithValue("@GroupUin", groupUin.ToString());
+            command.Parameters.AddWithValue("@Uin", uin);
+            command.Parameters.AddWithValue("@GroupUin", groupUin);
             using (SQLiteDataReader reader = command.ExecuteReader())
             {
                 if (reader.Read())
@@ -69,15 +70,15 @@ public class DatabaseManager
         }
     }
 
-    public void CreateNewUser(uint uin, uint groupUin) // 修改参数类型为 uint
+    public void CreateNewUser(uint uin, uint groupUin)
     {
         using (var connection = GetConnection())
         {
             connection.Open();
             string sql = "INSERT INTO PlayerPoints (Uin, GroupUin, Points, CheckInDate) VALUES (@Uin, @GroupUin, 0, null)";
             SQLiteCommand command = new SQLiteCommand(sql, connection);
-            command.Parameters.AddWithValue("@Uin", uin.ToString()); // uint 转换为 string 存入数据库
-            command.Parameters.AddWithValue("@GroupUin", groupUin.ToString()); // uint 转换为 string 存入数据库
+            command.Parameters.AddWithValue("@Uin", uin);
+            command.Parameters.AddWithValue("@GroupUin", groupUin);
             command.ExecuteNonQuery();
         }
     }
@@ -96,14 +97,14 @@ public class DatabaseManager
             connection.Open();
             string sql = @"SELECT Uin, Points FROM PlayerPoints WHERE GroupUin = @GroupUin ORDER BY Points DESC";
             SQLiteCommand command = new SQLiteCommand(sql, connection);
-            command.Parameters.AddWithValue("@GroupUin", groupUin.ToString());
+            command.Parameters.AddWithValue("@GroupUin", groupUin);
             using (SQLiteDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    uint uin = uint.Parse(reader["Uin"].ToString());
+                    uint uin = (uint)reader.GetInt32(0);
                     string name = uinNames[uin];
-                    int points = Convert.ToInt32(reader["Points"]);
+                    int points = reader.GetInt32(1);
                     userList.Add(new Tuple<uint, string, int>(uin, name, points));
                 }
             }
@@ -112,29 +113,33 @@ public class DatabaseManager
     }
 
 
-    public void UpdateUserPoints(uint groupUin, uint uin, int pointsToAdd) // 修改参数类型为 uint
+    public void UpdateUserPoints(uint groupUin, uint uin, int pointsToAdd)
     {
         using (var connection = GetConnection())
         {
             connection.Open();
-            string sql = "UPDATE PlayerPoints SET Points = Points + @PointsToAdd WHERE Uin = @Uin AND GroupUin=@GroupUin";
+            string sql = @"
+            INSERT OR IGNORE INTO PlayerPoints (GroupUin, Uin, Points, CheckInDate)
+                    VALUES (@GroupUin, @Uin, 0, 0);
+            UPDATE PlayerPoints SET Points = Points + @PointsToAdd WHERE Uin = @Uin AND GroupUin=@GroupUin";
             SQLiteCommand command = new SQLiteCommand(sql, connection);
             command.Parameters.AddWithValue("@PointsToAdd", pointsToAdd);
-            command.Parameters.AddWithValue("@Uin", uin.ToString()); // uint 转换为 string 用于查询
-            command.Parameters.AddWithValue("@GroupUin", groupUin.ToString());
+            command.Parameters.AddWithValue("@Uin", uin);
+            command.Parameters.AddWithValue("@GroupUin", groupUin);
             command.ExecuteNonQuery();
         }
     }
 
-    public bool CanCheckInToday(uint groupUin, uint uin) // 修改参数类型为 uint
+    public bool CanCheckInToday(uint groupUin, uint uin)
     {
         using (var connection = GetConnection())
         {
             connection.Open();
-            string sql = "SELECT CheckInDate FROM PlayerPoints WHERE Uin = @Uin AND GroupUin=@GroupUin";
+            string sql = @"INSERT OR IGNORE INTO PlayerPoints (GroupUin, Uin, Points, CheckInDate) VALUES (@GroupUin, @Uin, 0, 0);
+                    SELECT CheckInDate FROM PlayerPoints WHERE Uin = @Uin AND GroupUin=@GroupUin";
             SQLiteCommand command = new SQLiteCommand(sql, connection);
-            command.Parameters.AddWithValue("@Uin", uin.ToString()); // uint 转换为 string 用于查询
-            command.Parameters.AddWithValue("@GroupUin", groupUin.ToString());
+            command.Parameters.AddWithValue("@Uin", uin);
+            command.Parameters.AddWithValue("@GroupUin", groupUin);
             using (SQLiteDataReader reader = command.ExecuteReader())
             {
                 if (reader.Read())
@@ -157,7 +162,7 @@ public class DatabaseManager
         }
     }
 
-    public void UpdateCheckInDate(uint groupUin, uint uin) // 修改参数类型为 uint
+    public void UpdateCheckInDate(uint groupUin, uint uin)
     {
         using (var connection = GetConnection())
         {
@@ -167,11 +172,12 @@ public class DatabaseManager
             DateTime chinaNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, chinaZone);
             string todayDate = chinaNow.ToString("yyyy-MM-dd");
 
-            string sql = "UPDATE PlayerPoints SET CheckInDate = @CheckInDate WHERE Uin = @Uin AND GroupUin=@GroupUin";
+            string sql = @"INSERT OR IGNORE INTO PlayerPoints (GroupUin, Uin, Points, CheckInDate) VALUES (@GroupUin, @Uin, 0, 0);
+            UPDATE PlayerPoints SET CheckInDate = @CheckInDate WHERE Uin = @Uin AND GroupUin=@GroupUin";
             SQLiteCommand command = new SQLiteCommand(sql, connection);
             command.Parameters.AddWithValue("@CheckInDate", todayDate);
-            command.Parameters.AddWithValue("@Uin", uin.ToString()); // uint 转换为 string 用于查询
-            command.Parameters.AddWithValue("@GroupUin", groupUin.ToString());
+            command.Parameters.AddWithValue("@Uin", uin);
+            command.Parameters.AddWithValue("@GroupUin", groupUin);
             command.ExecuteNonQuery();
         }
     }

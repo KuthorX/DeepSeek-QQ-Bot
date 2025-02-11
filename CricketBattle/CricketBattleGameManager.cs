@@ -234,7 +234,7 @@ public class CricketBattleGameManager
             {
                 _gameState.Cricket1Bets.Add(uin, betAmount); // 玩家首次下注
             }
-            await SendMessageAsync($"{uin} 下注 蛐蛐1，积分 {betAmount}，当前积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
+            await SendMessageAsync($"下注成功！下注 蛐蛐1 积分 {betAmount}，剩余积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
         }
         else if (cricketNumber == 2)
         {
@@ -246,7 +246,7 @@ public class CricketBattleGameManager
             {
                 _gameState.Cricket2Bets.Add(uin, betAmount); // 玩家首次下注
             }
-            await SendMessageAsync($"{uin} 下注 蛐蛐2，积分 {betAmount}，当前积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
+            await SendMessageAsync($"下注成功！下注 蛐蛐2 积分 {betAmount}，剩余积分：{_databaseManager.GetUserPoints(_groupUin, uin)}");
         }
         else
         {
@@ -262,24 +262,46 @@ public class CricketBattleGameManager
         _gameState.IsFightingPhase = true;
         await SendMessageAsync($"--- 比赛开始 ---");
 
+        var msgs = new List<string>();
         while (_gameState.Cricket1.Health > 0 && _gameState.Cricket2.Health > 0)
         {
+            msgs = new List<string>();
             _gameState.TurnCount++;
-            await SendMessageAsync($"--- 回合 {_gameState.TurnCount} ---");
-            await ExecuteTurn(_gameState.Cricket1, _gameState.Cricket2);
+            msgs.Add($"--- 回合 {_gameState.TurnCount} ---");
+            ExecuteTurn(_gameState.Cricket1, _gameState.Cricket2, msgs);
             if (_gameState.Cricket2.Health <= 0) break; // 蛐蛐2死亡，结束战斗
-            await ExecuteTurn(_gameState.Cricket2, _gameState.Cricket1);
+            ExecuteTurn(_gameState.Cricket2, _gameState.Cricket1, msgs);
             if (_gameState.Cricket1.Health <= 0) break; // 蛐蛐1死亡，结束战斗
-            await Task.Delay(1500); // 稍微等待一下，模拟战斗过程
+            await SendMessageAsync(string.Join("\n", msgs));
+            await Task.Delay(3000); // 稍微等待一下，模拟战斗过程
+        }
+        if (msgs.Count != 0)
+        {
+            await SendMessageAsync(string.Join("\n", msgs));
         }
 
         await EndGame();
     }
 
 
-    private async Task ExecuteTurn(Cricket attacker, Cricket defender)
+    private void ExecuteTurn(Cricket attacker, Cricket defender, List<string> msgs)
     {
-        Skill selectedSkill = null;
+        // --- 回合开始时处理状态效果 ---
+        if (attacker.AttackBuffPercentageNextTurn > 0)
+        {
+            attacker.Attack = (int)(attacker.Attack * (1 + attacker.AttackBuffPercentageNextTurn)); // 应用攻击力 buff
+            msgs.Add($"{attacker.Name} 的攻击力提升了 {(int)(attacker.AttackBuffPercentageNextTurn * 100)}%！");
+            attacker.AttackBuffPercentageNextTurn = 0; // 清除 buff 状态
+        }
+        float currentDamageReduction = defender.DamageReductionNextTurn; // 记录当前的伤害减免，因为下面要清除
+        if (defender.DamageReductionNextTurn > 0)
+        {
+            msgs.Add($"{defender.Name} 受到了磐石的保护，伤害减免 {(int)(defender.DamageReductionNextTurn * 100)}%！");
+            defender.DamageReductionNextTurn = 0; // 清除伤害减免状态，只持续一回合
+        }
+
+
+        Skill? selectedSkill = null;
         string actionMessage = "";
 
         if (_gameState.Random.Next(100) < 30 && attacker.Skills.Any()) // 30% 技能触发概率
@@ -292,31 +314,40 @@ public class CricketBattleGameManager
             selectedSkill = _skillLibrary[1]; // 默认普通攻击 "嘿哈"
             actionMessage = $"{attacker.Name} 使用普通攻击：{selectedSkill.Name}！";
         }
-        await SendMessageAsync(actionMessage);
+        msgs.Add(actionMessage);
 
-        string skillResult = selectedSkill.Effect(attacker, defender, _gameState); // 执行技能效果
-        await SendMessageAsync(skillResult);
-        await SendMessageAsync($"{attacker.Name} 生命值: {attacker.Health}, {defender.Name} 生命值: {defender.Health}");
+        // 在调用技能效果之前处理免疫
+        if (defender.IsImmuneNextTurn)
+        {
+            msgs.Add($"{defender.Name} 免疫了本次受到的伤害！");
+            defender.IsImmuneNextTurn = false; // 清除免疫状态
+            msgs.Add($"{attacker.Name} 生命值: {attacker.Health}, {defender.Name} 生命值: {defender.Health}"); // 即使免疫也显示生命值
+            return; // 免疫时，技能效果不执行，直接返回
+        }
+
+        string skillResult = selectedSkill.Effect(attacker, defender, _gameState); // 执行技能效果 (技能效果内部已经处理了闪避和伤害减免)
+        msgs.Add(skillResult);
+        msgs.Add($"{attacker.Name} 生命值: {attacker.Health}, {defender.Name} 生命值: {defender.Health}");
     }
 
 
     private async Task EndGame()
     {
         _gameState.IsFightingPhase = false;
-        Cricket winner = null;
-        Cricket loser = null;
+        Cricket? winner = null;
+        Cricket? loser = null;
 
         if (_gameState.Cricket1.Health <= 0 && _gameState.Cricket2.Health <= 0)
         {
             _gameState.GameResult = "平局！";
-            await SendMessageAsync($"--- 比赛结束 --- 平局！");
+            await SendMessageAsync($"--- 比赛结束 ---\n平局！没有玩家获胜！");
         }
         else if (_gameState.Cricket1.Health > 0)
         {
             winner = _gameState.Cricket1;
             loser = _gameState.Cricket2;
             _gameState.GameResult = $"{winner.Name} 获胜！";
-            await SendMessageAsync($"--- 比赛结束 --- {winner.Name} 获胜！");
+            await SendMessageAsync($"--- 比赛结束 --- \n{winner.Name} 获胜！");
             RewardPlayers(1); // 奖励下注蛐蛐1的玩家
         }
         else
@@ -324,7 +355,7 @@ public class CricketBattleGameManager
             winner = _gameState.Cricket2;
             loser = _gameState.Cricket1;
             _gameState.GameResult = $"{winner.Name} 获胜！";
-            await SendMessageAsync($"--- 比赛结束 --- {winner.Name} 获胜！");
+            await SendMessageAsync($"--- 比赛结束 --- \n{winner.Name} 获胜！");
             RewardPlayers(2); // 奖励下注蛐蛐2的玩家
         }
 
@@ -336,7 +367,7 @@ public class CricketBattleGameManager
     {
         int rewardMultiplier = 2; // 奖励倍数
 
-        Dictionary<uint, int> winningBets = null; // 修改为 Dictionary<uint, int>
+        Dictionary<uint, int>? winningBets = null; // 修改为 Dictionary<uint, int>
         if (winningCricketNumber == 1)
         {
             winningBets = _gameState.Cricket1Bets;
@@ -346,6 +377,7 @@ public class CricketBattleGameManager
             winningBets = _gameState.Cricket2Bets;
         }
 
+        var chain = MessageBuilder.Group(_groupUin);
         if (winningBets != null && winningBets.Count > 0)
         {
             foreach (var betEntry in winningBets)
@@ -355,16 +387,25 @@ public class CricketBattleGameManager
                 int rewardAmount = betAmount * rewardMultiplier;
                 _databaseManager.UpdateUserPoints(_groupUin, playerUin, rewardAmount);
                 int points = _databaseManager.GetUserPoints(_groupUin, playerUin);
-                SendMessageAsync($"恭喜玩家 {playerUin} 下注 蛐蛐{winningCricketNumber} 获胜，获得奖励积分 {rewardAmount}！当前积分 {points}").Wait();
+                chain.Mention(playerUin).Text($"下注了 蛐蛐{winningCricketNumber} 获胜，奖励 {rewardAmount} 积分！当前积分 {points}。\n");
             }
+            SendMessageAsync(chain).Wait();
+        }
+        else
+        {
+            SendMessageAsync("没有玩家获胜").Wait();
         }
     }
 
 
-    // 模拟异步发送消息 (需要替换为实际的消息发送机制)
     public async Task SendMessageAsync(string message)
     {
         var chain = MessageBuilder.Group(_groupUin).Text(message);
+        await _context.SendMessage(chain.Build());
+    }
+
+    private async Task SendMessageAsync(MessageBuilder chain)
+    {
         await _context.SendMessage(chain.Build());
     }
 }

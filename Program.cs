@@ -267,7 +267,7 @@ public class QQBot
             if (message.StartsWith(command))
             {
                 var handler = groupCricketBattleGameManager.GetOrAdd(groupUin!.Value, new CricketBattleGameManager(bot, groupUin!.Value));
-                await handler.ProcessCommand(message, groupUin!.Value, userUin);
+                await handler.ProcessCommand(message, userUin, groupUin!.Value);
                 return;
             }
         }
