@@ -31,8 +31,15 @@ namespace QQBotCSharp.HorseGame.Models
             }
             else
             {
-                envSpeed = Speed + AnimalSpeedData.AnimalSpeedDict[Emoji][currentEnv];
-                envSpeed = Math.Max(envSpeed, 1);
+                if (currentEnv == "平地")
+                {
+                    envSpeed = Speed;
+                }
+                else
+                {
+                    envSpeed = Speed + AnimalSpeedData.AnimalSpeedDict[Emoji][currentEnv];
+                    envSpeed = Math.Max(envSpeed, 1);
+                }
             }
 
             Position += envSpeed;
