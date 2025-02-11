@@ -27,11 +27,11 @@ public class DatabaseManager
                 connection.Open();
                 string sql = @"
                         CREATE TABLE IF NOT EXISTS PlayerPoints (
-                            ID INTEGER PRIMARY KEY AUTOINCREMENT,
                             GroupUin INTEGER NOT NULL,
                             Uin INTEGER NOT NULL,
                             Points INTEGER NOT NULL DEFAULT 0,
-                            CheckInDate TEXT
+                            CheckInDate TEXT,
+                            PRIMARY KEY (GroupUin, Uin)
                         );";
                 SQLiteCommand command = new SQLiteCommand(sql, connection);
                 command.ExecuteNonQuery();

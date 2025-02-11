@@ -9,7 +9,7 @@ using Lagrange.Core.Message;
 
 public class CricketBattleGameManager
 {
-    public static HashSet<string> CricketGameCommand = ["开始斗蛐蛐", "蛐蛐下注", "蛐蛐签到", "蛐蛐乞讨", "查询蛐蛐积分", "查询蛐蛐排名"];
+    public static HashSet<string> CricketGameCommand = ["开始斗蛐蛐", "蛐蛐下注", "蛐蛐签到", "蛐蛐乞讨", "查询蛐蛐积分", "查询蛐蛐排名", "蛐蛐技能"];
     private GameState _gameState = new GameState();
     private DatabaseManager _databaseManager = new DatabaseManager();
     private Dictionary<int, Skill> _skillLibrary = new Dictionary<int, Skill>();
@@ -74,9 +74,13 @@ public class CricketBattleGameManager
         {
             await QueryRanking(groupUin);
         }
+        else if (command == "蛐蛐技能") // 新增 "蛐蛐技能" 指令处理
+        {
+            await ShowSkills();
+        }
         else
         {
-            await SendMessageAsync("未知指令，请使用：开始斗蛐蛐, 蛐蛐下注, 蛐蛐签到, 蛐蛐乞讨");
+            await SendMessageAsync($"未知指令，请使用 {string.Join(',', CricketGameCommand)}");
         }
     }
 
@@ -108,6 +112,16 @@ public class CricketBattleGameManager
             rankingMessage += $"{i + 1}. {user.Item2}: {user.Item3}\n"; // Item2 是 Name, Item3 是 Points
         }
         await SendMessageAsync(rankingMessage.TrimEnd('\n')); // 移除末尾换行符
+    }
+     private async Task ShowSkills() // 新增 ShowSkills 方法
+    {
+        string skillsMessage = "--- 蛐蛐技能列表 ---\n";
+        foreach (var skillPair in _skillLibrary)
+        {
+            Skill skill = skillPair.Value;
+            skillsMessage += $"编号: {skill.Id}, 名称: {skill.Name}, 效果: {skill.Description}\n";
+        }
+        await SendMessageAsync(skillsMessage.TrimEnd('\n')); // 移除末尾换行符
     }
 
     private async Task CheckIn(uint uin) // 修改参数类型为 uint
@@ -348,7 +362,7 @@ public class CricketBattleGameManager
             loser = _gameState.Cricket2;
             _gameState.GameResult = $"{winner.Name} 获胜！";
             await SendMessageAsync($"--- 比赛结束 --- \n{winner.Name} 获胜！");
-            RewardPlayers(1); // 奖励下注蛐蛐1的玩家
+            await RewardPlayers(1); // 奖励下注蛐蛐1的玩家
         }
         else
         {
@@ -356,14 +370,14 @@ public class CricketBattleGameManager
             loser = _gameState.Cricket1;
             _gameState.GameResult = $"{winner.Name} 获胜！";
             await SendMessageAsync($"--- 比赛结束 --- \n{winner.Name} 获胜！");
-            RewardPlayers(2); // 奖励下注蛐蛐2的玩家
+            await RewardPlayers(2); // 奖励下注蛐蛐2的玩家
         }
 
         _isGameRunning = false; // 游戏结束，允许开始新的游戏
         _gameState.GameStarted = false;
     }
 
-    private void RewardPlayers(int winningCricketNumber)
+    private async Task RewardPlayers(int winningCricketNumber)
     {
         int rewardMultiplier = 2; // 奖励倍数
 
@@ -389,11 +403,11 @@ public class CricketBattleGameManager
                 int points = _databaseManager.GetUserPoints(_groupUin, playerUin);
                 chain.Mention(playerUin).Text($"下注了 蛐蛐{winningCricketNumber} 获胜，奖励 {rewardAmount} 积分！当前积分 {points}。\n");
             }
-            SendMessageAsync(chain).Wait();
+            await SendMessageAsync(chain);
         }
         else
         {
-            SendMessageAsync("没有玩家获胜").Wait();
+            await SendMessageAsync("没有玩家获胜");
         }
     }
 
