@@ -84,7 +84,7 @@ public class CricketBattleGameManager
     {
         return _gameState.GameStarted;
     }
-    
+
     private async Task QueryPoints(uint uin)
     {
         int points = _databaseManager.GetUserPoints(uin);
@@ -354,7 +354,8 @@ public class CricketBattleGameManager
                 int betAmount = betEntry.Value;
                 int rewardAmount = betAmount * rewardMultiplier;
                 _databaseManager.UpdateUserPoints(playerUin, rewardAmount);
-                SendMessageAsync($"恭喜玩家 {playerUin} 下注 蛐蛐{winningCricketNumber} 获胜，获得奖励积分 {rewardAmount}！").Wait();
+                int points = _databaseManager.GetUserPoints(playerUin);
+                SendMessageAsync($"恭喜玩家 {playerUin} 下注 蛐蛐{winningCricketNumber} 获胜，获得奖励积分 {rewardAmount}！当前积分 {points}").Wait();
             }
         }
     }
