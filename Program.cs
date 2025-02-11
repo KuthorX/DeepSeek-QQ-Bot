@@ -11,6 +11,7 @@ using Lagrange.Core.Message;
 using Lagrange.Core.Message.Entity;
 using System.Collections.Concurrent;
 using QQBotCSharp.HorseGame;
+using QQBotCSharp.CricketBattle;
 
 namespace QQBotCSharp;
 
@@ -51,6 +52,7 @@ public class QQBot
     };
     private static readonly string _conversationsPath = "conversations.json";
     private static readonly ConcurrentDictionary<uint, HorseGameHandler> groupHorseGameHandler = new(); 
+    private static readonly ConcurrentDictionary<uint, CricketBattleGameManager> groupCricketBattleGameManager = new(); 
 
     public static byte[] GenRandomBytes(int length)
     {
@@ -253,11 +255,27 @@ public class QQBot
                 return;
             }
         }
-
         var curHandler = groupHorseGameHandler.GetOrAdd(groupUin!.Value, new HorseGameHandler(bot));
         if (curHandler.CheckIsRunning(groupUin!.Value))
         {
             await SendTempMessage(bot, chain, "赛马中，暂不支持 AI 回答。");
+            return;
+        }
+
+        foreach (var command in CricketBattleGameManager.CricketGameCommand)
+        {
+            if (message.StartsWith(command))
+            {
+                var handler = groupCricketBattleGameManager.GetOrAdd(groupUin!.Value, new CricketBattleGameManager(bot, groupUin!.Value));
+                await handler.ProcessCommand(message, groupUin!.Value, userUin);
+                return;
+            }
+        }
+
+        var curC = groupCricketBattleGameManager.GetOrAdd(groupUin!.Value, new CricketBattleGameManager(bot, groupUin!.Value));
+        if (curC.IsGameStarted())
+        {
+            await SendTempMessage(bot, chain, "斗蛐蛐中，暂不支持 AI 回答。");
             return;
         }
 
