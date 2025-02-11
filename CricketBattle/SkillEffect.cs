@@ -98,8 +98,23 @@ public static class SkillsEffects
 
     public static string TianFa(Cricket attacker, Cricket defender, GameState gameState)
     {
-        defender.Health = 0;
-        return $"{attacker.Name} 使用 天罚！{defender.Name} 立即死亡！";
+        Cricket target;
+        string targetName;
+
+        // 50% 概率劈到自己，50% 概率劈到对方
+        if (gameState.Random.Next(2) == 0) // 0 代表劈到自己 (attacker)
+        {
+            target = attacker;
+            targetName = attacker.Name;
+        }
+        else // 1 代表劈到对方 (defender)
+        {
+            target = defender;
+            targetName = defender.Name;
+        }
+
+        target.Health = 0; // 立即死亡
+        return $"{attacker.Name} 使用 天罚！{targetName} 遭受天谴，立即死亡！";
     }
 
     // 辅助方法：计算伤害减免后的伤害
