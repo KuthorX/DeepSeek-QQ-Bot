@@ -328,7 +328,6 @@ namespace QQBotCSharp.HorseGame
 
         private async Task DistributeRewardsAsync(Dictionary<uint, List<Horse>> rankDetail)
         {
-            // 定义奖励倍数
             var rewardMultipliers = new Dictionary<int, int>
             {
                 { 1, 5 }, // 第一名奖励 *5
@@ -338,7 +337,6 @@ namespace QQBotCSharp.HorseGame
 
             var hasWinner = false;
             var chain = MessageBuilder.Group(_groupUin);
-            // 遍历前三名
             for (uint rank = 1; rank <= 3; rank++)
             {
                 var emojis = new List<string>();
@@ -346,14 +344,24 @@ namespace QQBotCSharp.HorseGame
                 int multiplier = rewardMultipliers[(int)rank];
                 foreach (var h in rankDetail[rank])
                 {
-                    // 找到下注了这匹马的玩家
                     var betsOnHorse = _bets.Values.Where(b => b.HorseId == h.Id).ToList();
                     foreach (var bet in betsOnHorse)
                     {
                         int reward = bet.Amount * multiplier;
                         await PlayerManager.AddPointsAsync(_groupUin, bet.UserUin, reward);
-                        var point = await new Database().GetPlayerPointsAsync(_groupUin, bet.UserUin);
-                        chain.Mention(bet.UserUin).Text($"下注了 {h.Emoji}，获得第 {rank} 名，奖励 {reward} 积分！当前积分 {point}。\n");
+                        
+                        // 使用using语句确保Database实例被正确释放
+                        using (var database = new Database())
+                        {
+                            var (points, level) = await database.GetPlayerInfoAsync(_groupUin, bet.UserUin);
+                            var levelUpCount = (points + reward - Models.Player.MaxPoints) / Models.Player.LevelUpCost;
+                            chain.Mention(bet.UserUin).Text($"下注了 {h.Emoji}，获得第 {rank} 名，奖励 {reward} 积分！当前等级 {level}，积分 {points}。");
+                            if (levelUpCount > 0)
+                            {
+                                chain.Text($"积分已达上限，自动升级 {levelUpCount} 级！");
+                            }
+                        }
+                        chain.Text("\n");
                         hasWinner = true;
                     }
                 }
