@@ -348,17 +348,21 @@ namespace QQBotCSharp.HorseGame
                     foreach (var bet in betsOnHorse)
                     {
                         int reward = bet.Amount * multiplier;
-                        await PlayerManager.AddPointsAsync(_groupUin, bet.UserUin, reward);
                         
                         // 使用using语句确保Database实例被正确释放
                         using (var database = new Database())
                         {
+                            var (prePoints, preLevel) = await database.GetPlayerInfoAsync(_groupUin, bet.UserUin);
+                            await PlayerManager.AddPointsAsync(_groupUin, bet.UserUin, reward);
                             var (points, level) = await database.GetPlayerInfoAsync(_groupUin, bet.UserUin);
-                            var levelUpCount = (points + reward - Models.Player.MaxPoints) / Models.Player.LevelUpCost;
-                            chain.Mention(bet.UserUin).Text($"下注了 {h.Emoji}，获得第 {rank} 名，奖励 {reward} 积分！当前等级 {level}，积分 {points}。");
+                            var levelUpCount = level - preLevel;
                             if (levelUpCount > 0)
                             {
-                                chain.Text($"积分已达上限，自动升级 {levelUpCount} 级！");
+                                chain.Mention(bet.UserUin).Text($"下注了 {h.Emoji}，获得第 {rank} 名，奖励 {reward} 积分并自动升 {levelUpCount} 级！当前等级 {level}，剩余积分 {points}。");
+                            }
+                            else 
+                            {
+                                chain.Mention(bet.UserUin).Text($"下注了 {h.Emoji}，获得第 {rank} 名，奖励 {reward} 积分！当前等级 {level}，积分 {points}。");
                             }
                         }
                         chain.Text("\n");
