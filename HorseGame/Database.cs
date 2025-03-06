@@ -78,7 +78,8 @@ namespace QQBotCSharp.HorseGame
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var query = "SELECT last_sign_in_date FROM players WHERE group_uin = @groupUin AND user_uin = @userUin;";
+                var query = @"
+                    SELECT last_sign_in_date FROM players WHERE group_uin = @groupUin AND user_uin = @userUin;";
                 using (var command = new SQLiteCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@groupUin", groupUin);
@@ -86,9 +87,15 @@ namespace QQBotCSharp.HorseGame
 
                     var result = await command.ExecuteScalarAsync();
                     if (result == null) return false;
-
-                    var lastSignInDate = DateTime.Parse(result.ToString());
-                    return lastSignInDate.Date == DateTime.Today;
+                    
+                    var resultStr = result.ToString();
+                    if (string.IsNullOrEmpty(resultStr) || resultStr == "{}")
+                        return false;
+                        
+                    if (DateTime.TryParse(resultStr, out var lastSignInDate))
+                        return lastSignInDate.Date == DateTime.Today;
+                    
+                    return false;
                 }
             }
         }
