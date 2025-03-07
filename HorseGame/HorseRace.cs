@@ -328,7 +328,7 @@ namespace QQBotCSharp.HorseGame
 
         private async Task DistributeRewardsAsync(Dictionary<uint, List<Horse>> rankDetail)
         {
-            var rewardMultipliers = new Dictionary<int, int>
+            var rewardMultipliers = new Dictionary<uint, long>
             {
                 { 1, 5 }, // 第一名奖励 *5
                 { 2, 3 }, // 第二名奖励 *3
@@ -341,13 +341,13 @@ namespace QQBotCSharp.HorseGame
             {
                 var emojis = new List<string>();
                 if (rankDetail.GetValueOrDefault(rank, []).Count == 0) continue;
-                int multiplier = rewardMultipliers[(int)rank];
+                long multiplier = rewardMultipliers[rank];
                 foreach (var h in rankDetail[rank])
                 {
                     var betsOnHorse = _bets.Values.Where(b => b.HorseId == h.Id).ToList();
                     foreach (var bet in betsOnHorse)
                     {
-                        int reward = bet.Amount * multiplier;
+                        long reward = bet.Amount * multiplier;
                         
                         // 使用using语句确保Database实例被正确释放
                         using (var database = new Database())
@@ -399,7 +399,7 @@ namespace QQBotCSharp.HorseGame
             await SendMessageAsync($"{currentRoundMessage}\n{skillMessages}\n{status}");
         }
 
-        public async Task PlaceBetAsync(uint userUin, int horseId, int amount)
+        public async Task PlaceBetAsync(uint userUin, int horseId, long amount)
         {
             if (currentRound > 0)
             {

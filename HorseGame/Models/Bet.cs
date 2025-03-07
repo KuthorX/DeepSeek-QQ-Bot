@@ -4,6 +4,6 @@ namespace QQBotCSharp.HorseGame.Models
     {
         public uint UserUin { get; set; }
         public int HorseId { get; set; }
-        public int Amount { get; set; }
+        public long Amount { get; set; }
     }
 }

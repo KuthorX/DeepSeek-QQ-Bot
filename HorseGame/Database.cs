@@ -1,5 +1,6 @@
 using System;
 using System.Data.SQLite;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace QQBotCSharp.HorseGame
@@ -79,7 +80,7 @@ namespace QQBotCSharp.HorseGame
         /// <summary>
         /// 获取玩家积分
         /// </summary>
-        public async Task<int> GetPlayerPointsAsync(long groupUin, long userUin)
+        public async Task<long> GetPlayerPointsAsync(long groupUin, long userUin)
         {
             using (var connection = new SQLiteConnection(_connectionString))
             {
@@ -91,7 +92,7 @@ namespace QQBotCSharp.HorseGame
                     command.Parameters.AddWithValue("@userUin", userUin);
 
                     var result = await command.ExecuteScalarAsync();
-                    return result == null ? 0 : Convert.ToInt32(result);
+                    return result == null ? 0 : Convert.ToInt64(result);
                 }
             }
         }
@@ -119,7 +120,7 @@ namespace QQBotCSharp.HorseGame
         /// <summary>
         /// 获取玩家信息
         /// </summary>
-        public async Task<(int Points, int Level)> GetPlayerInfoAsync(long groupUin, long userUin)
+        public async Task<(long Points, int Level)> GetPlayerInfoAsync(long groupUin, long userUin)
         {
             using (var connection = new SQLiteConnection(_connectionString))
             {
@@ -201,7 +202,7 @@ namespace QQBotCSharp.HorseGame
         /// <summary>
         /// 扣除玩家积分
         /// </summary>
-        public async Task<bool> DeductPointsAsync(long groupUin, long userUin, int amount)
+        public async Task<bool> DeductPointsAsync(long groupUin, long userUin, long amount)
         {
             using (var connection = new SQLiteConnection(_connectionString))
             {
@@ -248,7 +249,7 @@ namespace QQBotCSharp.HorseGame
         /// <summary>
         /// 增加玩家积分，处理积分上限和自动升级
         /// </summary>
-        public async Task AddPointsAsync(long groupUin, long userUin, int amount)
+        public async Task AddPointsAsync(long groupUin, long userUin, long amount)
         {
             using (var connection = new SQLiteConnection(_connectionString))
             {
@@ -290,32 +291,9 @@ namespace QQBotCSharp.HorseGame
         }
 
         /// <summary>
-        /// 记录下注信息
-        /// </summary>
-        public async Task RecordBetAsync(long groupUin, long userUin, int horseId, int amount)
-        {
-            using (var connection = new SQLiteConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                var query = @"
-                    INSERT INTO bets (group_uin, user_uin, horse_id, amount)
-                    VALUES (@groupUin, @userUin, @horseId, @amount);";
-                using (var command = new SQLiteCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@groupUin", groupUin);
-                    command.Parameters.AddWithValue("@userUin", userUin);
-                    command.Parameters.AddWithValue("@horseId", horseId);
-                    command.Parameters.AddWithValue("@amount", amount);
-
-                    await command.ExecuteNonQueryAsync();
-                }
-            }
-        }
-
-        /// <summary>
         /// 获取本群群友积分排名
         /// </summary>
-        public async Task<List<(uint UserUin, int Points)>> GetGroupMemberRankingAsync(uint groupUin)
+        public async Task<List<(uint UserUin, long Points)>> GetGroupMemberRankingAsync(uint groupUin)
         {
             using var connection = new SQLiteConnection(_connectionString);
             await connection.OpenAsync();
@@ -328,13 +306,13 @@ namespace QQBotCSharp.HorseGame
             command.Parameters.AddWithValue("@groupUin", groupUin);
 
             var reader = await command.ExecuteReaderAsync();
-            var ranking = new List<(uint UserUin, int Points)>();
+            var ranking = new List<(uint UserUin, long Points)>();
 
             while (await reader.ReadAsync())
             {
                 var userUin = reader.GetInt32(0);
                 var points = reader.GetInt32(1);
-                ranking.Add(((uint UserUin, int Points))(userUin, points));
+                ranking.Add(((uint UserUin, long Points))(userUin, points));
             }
 
             return ranking;

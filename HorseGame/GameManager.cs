@@ -45,7 +45,7 @@ namespace QQBotCSharp.HorseGame
             }
         }
 
-        public async Task PlaceBetAsync(uint groupUin, uint userUin, int horseId, int betAmount)
+        public async Task PlaceBetAsync(uint groupUin, uint userUin, int horseId, long betAmount)
         {
             if (_activeRaces.TryGetValue(groupUin, out var race))
             {

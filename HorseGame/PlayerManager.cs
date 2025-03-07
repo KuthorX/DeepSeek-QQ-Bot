@@ -16,6 +16,11 @@ namespace QQBotCSharp.HorseGame
                 await SendMessageAsync(groupUin, "购买等级数必须大于0！");
                 return;
             }
+            else if (levelCount >= 100)
+            {
+                await SendMessageAsync(groupUin, "购买等级数必须小于等于100！");
+                return;
+            }
 
             var totalCost = levelCount * Models.Player.LevelUpCost;
             var (currentPoints, currentLevel) = await _database.GetPlayerInfoAsync(groupUin, userUin);
@@ -50,7 +55,7 @@ namespace QQBotCSharp.HorseGame
 
         public async Task GetGroupMemberRankingAsync(uint groupUin)
         {
-            var players = new List<(uint UserUin, int Points, int Level)>();
+            var players = new List<(uint UserUin, long Points, int Level)>();
             using (var database = new Database())
             {
                 var uinPoints = await database.GetGroupMemberRankingAsync(groupUin);
@@ -112,7 +117,7 @@ namespace QQBotCSharp.HorseGame
             await SendMessageAsync(groupUin, $"乞讨成功！获得 {point} 积分。");
         }
 
-        public static async Task<bool> DeductPointsAsync(uint groupUin, uint userUin, int amount)
+        public static async Task<bool> DeductPointsAsync(uint groupUin, uint userUin, long amount)
         {
             using (var database = new Database())
             {
@@ -120,7 +125,7 @@ namespace QQBotCSharp.HorseGame
             }
         }
 
-        public static async Task AddPointsAsync(uint groupUin, uint userUin, int amount)
+        public static async Task AddPointsAsync(uint groupUin, uint userUin, long amount)
         {
             using (var database = new Database())
             {
