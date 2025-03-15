@@ -258,7 +258,7 @@ public class QQBot
         var curHandler = groupHorseGameHandler.GetOrAdd(groupUin!.Value, new HorseGameHandler(bot));
         if (curHandler.CheckIsRunning(groupUin!.Value))
         {
-            await SendTempMessage(bot, chain, "赛马中，暂不支持 AI 回答。");
+            await SendTempMessage(bot, chain, "赛马中，暂不支持其他模式。");
             return;
         }
 
@@ -275,10 +275,13 @@ public class QQBot
         var curC = groupCricketBattleGameManager.GetOrAdd(groupUin!.Value, new CricketBattleGameManager(bot, groupUin!.Value));
         if (curC.IsGameStarted())
         {
-            await SendTempMessage(bot, chain, "斗蛐蛐中，暂不支持 AI 回答。");
+            await SendTempMessage(bot, chain, "斗蛐蛐中，暂不支持其他模式。");
             return;
         }
 
+
+        await SendTempMessage(bot, chain, "不支持的指令");
+        return;
 
         // 新增重试状态检查
         if (IsGroupInRetry(groupUin.Value))
