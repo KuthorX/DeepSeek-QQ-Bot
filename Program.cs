@@ -21,6 +21,7 @@ public class QQBot
 {
     // 配置信息
     private static HashSet<uint> _allowedGroupIds = [];
+    private static HashSet<uint> _mlAllowedGroupIds = [];
     private static uint _botUin = 0;
     private static string _apiKey = "";
     private const string ConfigPath = "config.json";
@@ -52,7 +53,9 @@ public class QQBot
     };
     private static readonly string _conversationsPath = "conversations.json";
     private static readonly ConcurrentDictionary<uint, HorseGameHandler> groupHorseGameHandler = new(); 
-    private static readonly ConcurrentDictionary<uint, CricketBattleGameManager> groupCricketBattleGameManager = new(); 
+    private static readonly ConcurrentDictionary<uint, CricketBattleGameManager> groupCricketBattleGameManager = new();
+    private static MLHandler? _mlHandler = null; 
+    private static bool _handleGamesMode = true; // 默认处理游戏模式
 
     public static byte[] GenRandomBytes(int length)
     {
@@ -117,15 +120,16 @@ public class QQBot
     public static async Task Main(string[] args)
     {
         Console.WriteLine("正在加载配置文件...");
-        
+        var config = LoadConfig();
+
         try
         {
-            var config = LoadConfig();
             _botUin = config.BotUin;
             _apiKey = config.ApiKey;
             _allowedGroupIds = new HashSet<uint>(config.AllowedGroupIds);
+            _mlAllowedGroupIds = new HashSet<uint>(config.MlAllowedGroupIds);
 
-            Console.WriteLine($"已加载配置：BotUin={_botUin}, 允许群组={string.Join(",", _allowedGroupIds)}");
+            Console.WriteLine($"已加载配置：BotUin={_botUin}, 允许群组={string.Join(",", _allowedGroupIds)}, ML主机={config.MlHost}, _mlAllowedGroupIds={string.Join(",", _mlAllowedGroupIds)}");
 
             AnimalSpeedData.LoadDataFromJson();
         }
@@ -167,6 +171,9 @@ public class QQBot
         File.WriteAllText("keystore.json", jsonString);
 
         Console.WriteLine("登录成功，注册事件");
+
+        // 初始化ML处理器
+        _mlHandler = new MLHandler(bot, config.MlHost);
 
         bot.Invoker.OnGroupMessageReceived += HandleGroupMessageEvent;
         bot.Invoker.OnFriendMessageReceived += HandlePrivateMessage;
@@ -244,7 +251,27 @@ public class QQBot
 
         // 提取消息文本
         var message = ExtractMessageText(chain);
+        Console.WriteLine("收到指令：" + message);
+
         if (string.IsNullOrWhiteSpace(message)) return;
+
+
+        // 处理ML指令
+        if (message.StartsWith("ML ") || message.StartsWith("ml "))
+        {
+            // 群聊白名单检查
+            if (!groupUin.HasValue || !_mlAllowedGroupIds.Contains(groupUin.Value))
+            {
+                await SendTempMessage(bot, chain, "不支持的指令");
+                return;
+            }
+            if (_mlHandler != null)
+            {
+                string[] args = message.Split(' ', 2)[1].Trim().Split(' ');
+                await _mlHandler.HandleMLCommandAsync(args, groupUin!.Value, userUin);
+                return;
+            }
+        }
 
         foreach (var command in HorseGameHandler.HorseGameCommand)
         {
@@ -278,7 +305,6 @@ public class QQBot
             await SendTempMessage(bot, chain, "斗蛐蛐中，暂不支持其他模式。");
             return;
         }
-
 
         await SendTempMessage(bot, chain, "不支持的指令");
         return;
